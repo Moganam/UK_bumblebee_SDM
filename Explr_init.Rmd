@@ -1,0 +1,107 @@
+---
+title: "Explr_init"
+output: html_document
+date: "2025-02-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Bumblebee data
+A random sample of 25k was taken from the NBN data using pandas.dataframe.sample
+This will be used to conduct an initial exploration of the data, and if successful, an initial attempt at creating an SDM for UK bumblebees.
+This data was sourced from multiple organisations ('$ Data provider' in the data) which collected data on bumblebee occurrence independent to the NBN (check).
+
+#Load library
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+#Read dataset
+```{r}
+library(readr)
+sampledata <- read_csv("nbn_bombus_occurence_sample_25k.csv")
+```
+
+#look at data
+```{r}
+str(sampledata)
+glimpse(sampledata)
+```
+
+#Plot
+
+```{r}
+ggplot(sampledata, aes(x = `Start date`, y = `Scientific name`)) +
+  geom_point()+ 
+  ylab("Species") +
+  xlab("Date") +
+  theme_bw()
+```
+
+#We see...
+
+```{r}
+ggplot(data = sampledata, aes(x = `Scientific name`)) + 
+  geom_bar() + 
+  ylab("Frequency") +
+  xlab("Species") +
+  coord_flip() +
+  theme_bw()
+```
+
+#Mapping the data
+
+```{r}
+library(sf)  # For spatial data handling
+library(rnaturalearth)  # For base maps
+library(rnaturalearthdata)  # Additional map data
+library(dplyr)  # For data manipulation
+```
+
+```{r}
+# Convert to spatial points using sf
+
+bumblebee_sf <- sampledata %>%
+  st_as_sf(coords = c("Longitude (WGS84)", "Latitude (WGS84)"), crs = 4326) %>%
+  mutate(date = as.factor(sampledata$`Start date`))  # Ensure date is in the dataset
+
+bumblebee_sf <- sampledata %>%
+  st_as_sf(coords = c("Longitude (WGS84)", "Latitude (WGS84)"), crs = 4326)
+
+# Ensure species is treated as a factor
+bumblebee_sf$species <- as.factor(sampledata$`Scientific name`)
+
+```
+
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+uk <- ne_countries(scale = "medium", returnclass = "sf") %>%
+  filter(admin == "United Kingdom")
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = uk, fill = "gray80", color = "black") +  # Base map
+  geom_sf(data = bumblebee_sf, aes(color = species), size = 2, alpha = 0.7) +  # Plot occurrences
+  scale_color_viridis_d() +  # Color scale for species
+  theme_minimal() +
+  labs(title = "Bumblebee Species Occurrence",
+       x = "Longitude", 
+       y = "Latitude", 
+       color = "Species") +
+  theme(legend.position = "bottom")
+
+
+```
+
+
+
+
+
+
+
+
